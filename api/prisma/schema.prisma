@@ -1,0 +1,161 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String   @id @default(uuid())
+  name                String
+  email               String   @unique
+  password            String
+  image               String   @default("")
+  preferences         Preferences?
+  dietaryRestrictions DietaryRestrictions?
+  availableAppliances AvailableAppliances?
+  ingredientsList     Ingredient[]
+  likedBy            UserLike[]   @relation("UserLikedBy")
+  likes              UserLike[]   @relation("UserLikes")
+  dislikedBy         UserDislike[] @relation("UserDislikedBy")
+  dislikes           UserDislike[] @relation("UserDislikes")
+  matchedBy          UserMatch[]   @relation("UserMatchedBy")
+  matches            UserMatch[]   @relation("UserMatches")
+  recipes            RecipeUser[]  @relation("UserRecipes")
+  dietaryGoals       DietaryGoals?
+  location           String   @default("")
+  favorites          Favorite[]
+  sentMessages       Message[]     @relation("SentMessages")
+  receivedMessages   Message[]     @relation("ReceivedMessages")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id])
+  senderId  String
+  receiver  User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  receiverId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserLike {
+  id         String @id @default(uuid())
+  user       User   @relation("UserLikes", fields: [userId], references: [id])
+  userId     String
+  likedUser  User   @relation("UserLikedBy", fields: [likedUserId], references: [id])
+  likedUserId String
+
+  @@unique([userId, likedUserId])
+}
+
+model UserDislike {
+  id            String @id @default(uuid())
+  user          User   @relation("UserDislikes", fields: [userId], references: [id])
+  userId        String
+  dislikedUser  User   @relation("UserDislikedBy", fields: [dislikedUserId], references: [id])
+  dislikedUserId String
+
+  @@unique([userId, dislikedUserId])
+}
+
+model UserMatch {
+  id           String @id @default(uuid())
+  user         User   @relation("UserMatches", fields: [userId], references: [id])
+  userId       String
+  matchedUser  User   @relation("UserMatchedBy", fields: [matchedUserId], references: [id])
+  matchedUserId String
+
+  @@unique([userId, matchedUserId])
+}
+
+model RecipeUser {
+  id       String @id @default(uuid())
+  user     User   @relation("UserRecipes", fields: [userId], references: [id])
+  userId   String
+  recipe   Recipe @relation(fields: [recipeId], references: [id])
+  recipeId String
+
+  @@unique([userId, recipeId])
+}
+
+model Preferences {
+  id       String   @id @default(uuid())
+  cuisines String[]
+  user     User     @relation(fields: [userId], references: [id])
+  userId   String   @unique
+}
+
+model DietaryRestrictions {
+  id          String   @id @default(uuid())
+  vegetarian  Boolean  @default(false)
+  vegan       Boolean  @default(false)
+  kosher      Boolean  @default(false)
+  glutenFree  Boolean  @default(false)
+  dairyFree   Boolean  @default(false)
+  allergies   String[]
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String   @unique
+}
+
+model AvailableAppliances {
+  id         String  @id @default(uuid())
+  airFryer   Boolean @default(false)
+  microwave  Boolean @default(false)
+  oven       Boolean @default(false)
+  stoveTop   Boolean @default(false)
+  sousVide   Boolean @default(false)
+  deepFryer  Boolean @default(false)
+  blender    Boolean @default(false)
+  instantPot Boolean @default(false)
+  user       User    @relation(fields: [userId], references: [id])
+  userId     String  @unique
+}
+
+model Ingredient {
+  id        String  @id @default(uuid())
+  ingredient String
+  quantity   String
+  user      User    @relation(fields: [userId], references: [id])
+  userId    String
+}
+
+model DietaryGoals {
+  id      String  @id @default(uuid())
+  protein Float   @default(0)
+  carbs   Float   @default(0)
+  fats    Float   @default(0)
+  user    User    @relation(fields: [userId], references: [id])
+  userId  String  @unique
+}
+
+model Favorite {
+  id          String   @id @default(uuid())
+  recipeId    String
+  title       String
+  cuisine     String
+  description String
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+}
+
+model Recipe {
+  id        String   @id @default(uuid())
+  users     RecipeUser[]
+  markdown  String
+  recipes   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
