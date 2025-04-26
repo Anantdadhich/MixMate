@@ -2,10 +2,13 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 const MatchScore = ({ score }) => {
+  // Extract the numeric score from the score object
+  const matchScore = typeof score === 'object' ? score.score : score;
+
   // Determine color based on match percentage
   const getScoreColor = () => {
-    if (score < 33) return 'bg-red-500';
-    if (score < 66) return 'bg-yellow-500';
+    if (matchScore < 33) return 'bg-red-500';
+    if (matchScore < 66) return 'bg-yellow-500';
     return 'bg-green-500';
   };
 
@@ -50,36 +53,27 @@ const MatchScore = ({ score }) => {
   };
 
   return (
-    <div className="relative flex items-center gap-2 bg-blue-50 rounded-xl px-4 py-2 shadow-sm">
-      <div className="relative w-12 h-12 rounded-full border-4 border-blue-100 flex items-center justify-center overflow-hidden">
-        <motion.div
-          className={`absolute w-full ${getScoreColor()} opacity-80`}
-          initial="initial"
-          animate="animate"
-          style={{ 
-            bottom: 0, 
-            height: `${score}%`,
-          }}
-        />
-        <motion.div 
-          className="relative z-10"
-          variants={scoreVariants}
-          initial="initial"
-          animate="animate"
-        >
-          <span className="text-lg font-bold text-blue-900">
-            {score}
-          </span>
-        </motion.div>
-      </div>
-      <motion.div 
-        className="flex flex-col"
-        initial={{ x: -20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
+    <div className="relative w-24 h-24">
+      <motion.div
+        className={`absolute inset-0 rounded-full ${getScoreColor()} overflow-hidden`}
+        variants={waveVariants}
+        animate="animate"
       >
-        <span className="text-sm font-medium text-blue-400">Match Score</span>
-        <span className="text-xs text-blue-300">/100</span>
+        <svg className="w-full h-full" viewBox="0 0 120 120">
+          <motion.path
+            fill="currentColor"
+            variants={liquidWaveVariants}
+            animate="animate"
+          />
+        </svg>
+      </motion.div>
+      <motion.div
+        className="absolute inset-0 flex items-center justify-center text-white font-bold text-xl"
+        variants={scoreVariants}
+        initial="initial"
+        animate="animate"
+      >
+        {matchScore}%
       </motion.div>
     </div>
   );

@@ -45,7 +45,10 @@ const Sidebar = () => {
 							<NoMatchesFound />
 						) : (
 							matches.map((match) => (
-								<Link key={match._id} to={`/chat/${match._id}`}>
+								<Link 
+									key={match.id || match._id} 
+									to={`/chat/${match.id || match._id}`}
+								>
 									<div className='flex items-center mb-4 cursor-pointer hover:bg-green-50 p-2 rounded-lg transition-colors duration-300'>
 										<img
 											src={match.image || "/avatar.png"}

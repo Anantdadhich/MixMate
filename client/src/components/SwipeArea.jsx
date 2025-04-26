@@ -4,10 +4,9 @@ import { useMatchStore } from "../store/useMatchStore";
 import { useAuthStore } from '../store/useAuthStore';
 import MatchScore from './MatchScore';
 import React from 'react';
-import loadingGif from '../assets/pan.gif'; // Import the loading GIF
+
 import { motion, AnimatePresence } from 'framer-motion'; // Add this import
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+
 import { Heart } from 'lucide-react';
 import { useUserStore } from "../store/useUserStore";
 import { toast } from 'react-toastify';
@@ -327,15 +326,13 @@ const SwipeArea = () => {
 								<div className="flex justify-between items-start mb-4">
 									<div className="flex items-center">
 										<div className="w-16 h-16 bg-gray-300 rounded-full mr-4 flex items-center justify-center overflow-hidden">
-											{console.log('User image:', user.image)}
 											{user.image ? (
 												<img 
 													src={user.image} 
 													alt={user.name} 
 													className="w-full h-full object-cover"
 													onError={(e) => {
-														console.log('Image failed to load, using default');
-														e.target.onerror = null; 
+														e.target.onerror = null;
 														e.target.src = "/avatar.png";
 													}}
 												/>
@@ -343,8 +340,7 @@ const SwipeArea = () => {
 												<img 
 													src="/avatar.png" 
 													alt="Default profile" 
-														className="w-full h-full object-cover" 
-													onError={(e) => console.log('Default avatar failed to load')}
+													className="w-full h-full object-cover"
 												/>
 											)}
 										</div>

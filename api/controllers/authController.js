@@ -23,6 +23,8 @@ export const signup = async (req, res) => {
 	} = req.body;
 
 	try {
+		console.log('Signup attempt with data:', { name, email, image, location });
+
 		if (!name || !email || !password) {
 			return res.status(400).json({
 				success: false,
@@ -34,6 +36,15 @@ export const signup = async (req, res) => {
 			return res.status(400).json({
 				success: false,
 				message: "Password must be at least 6 characters",
+			});
+		}
+
+		// Check if user already exists
+		const existingUser = await User.findByEmail(email);
+		if (existingUser) {
+			return res.status(400).json({
+				success: false,
+				message: "User with this email already exists",
 			});
 		}
 
@@ -54,42 +65,34 @@ export const signup = async (req, res) => {
 				dairyFree: false,
 				allergies: []
 			},
-			availableAppliances: availableAppliances || {
-				air_Fryer: false,
-				microwave: false,
-				oven: false,
-				stove_top: false,
-				sous_vide: false,
-				deep_fryer: false,
-				blender: false,
-				instant_pot: false
-			},
+			availableAppliances: availableAppliances || {},
 			ingredientsList: ingredientsList || [],
-			dietaryGoals: dietaryGoals || {
-				protein: 0,
-				carbs: 0,
-				fats: 0
-			}
+			dietaryGoals: dietaryGoals || {}
 		});
 
-		const token = signToken(newUser._id);
-
-		res.cookie("jwt", token, {
-			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
-			httpOnly: true, // prevents XSS attacks
-			sameSite: "strict", // prevents CSRF attacks
-			secure: process.env.NODE_ENV === "production",
-		});
+		const token = signToken(newUser.id);
 
 		res.status(201).json({
 			success: true,
-			user: newUser,
+			token,
+			user: {
+				id: newUser.id,
+				name: newUser.name,
+				email: newUser.email,
+				image: newUser.image,
+				location: newUser.location
+			}
 		});
 	} catch (error) {
-		console.log("Error in signup controller:", error);
-		res.status(500).json({ success: false, message: "Server error" });
+		console.error('Signup error:', error);
+		res.status(500).json({
+			success: false,
+			message: "Error creating user",
+			error: process.env.NODE_ENV === 'development' ? error.message : undefined
+		});
 	}
 };
+
 export const login = async (req, res) => {
 	const { email, password } = req.body;
 	try {
@@ -100,16 +103,16 @@ export const login = async (req, res) => {
 			});
 		}
 
-		const user = await User.findOne({ email }).select("+password");
+		const user = await User.findByEmail(email);
 
-		if (!user || !(await user.matchPassword(password))) {
+		if (!user || !(await User.matchPassword(password, user.password))) {
 			return res.status(401).json({
 				success: false,
 				message: "Invalid email or password",
 			});
 		}
 
-		const token = signToken(user._id);
+		const token = signToken(user.id);
 
 		res.cookie("jwt", token, {
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
@@ -120,13 +123,25 @@ export const login = async (req, res) => {
 
 		res.status(200).json({
 			success: true,
-			user,
+			token,
+			user: {
+				id: user.id,
+				name: user.name,
+				email: user.email,
+				image: user.image,
+				location: user.location
+			}
 		});
 	} catch (error) {
-		console.log("Error in login controller:", error);
-		res.status(500).json({ success: false, message: "Server error" });
+		console.error("Error in login controller:", error);
+		res.status(500).json({ 
+			success: false, 
+			message: "Server error",
+			error: process.env.NODE_ENV === 'development' ? error.message : undefined
+		});
 	}
 };
+
 export const logout = async (req, res) => {
 	res.clearCookie("jwt");
 	res.status(200).json({ success: true, message: "Logged out successfully" });

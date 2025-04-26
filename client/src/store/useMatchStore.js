@@ -14,10 +14,16 @@ export const useMatchStore = create((set) => ({
 		try {
 			set({ isLoadingMyMatches: true });
 			const res = await axiosInstance.get("/matches");
-			set({ matches: res.data.matches });
+			if (res?.data?.matches) {
+				set({ matches: res.data.matches });
+			} else {
+				set({ matches: [] });
+				toast.error("Failed to load matches");
+			}
 		} catch (error) {
+			console.error("Error fetching matches:", error);
 			set({ matches: [] });
-			toast.error(error.response.data.message || "Something went wrong");
+			toast.error(error?.response?.data?.message || "Failed to load matches");
 		} finally {
 			set({ isLoadingMyMatches: false });
 		}
@@ -27,10 +33,16 @@ export const useMatchStore = create((set) => ({
 		try {
 			set({ isLoadingUserProfiles: true });
 			const res = await axiosInstance.get("/matches/user-profiles");
-			set({ userProfiles: res.data.users });
+			if (res?.data?.users) {
+				set({ userProfiles: res.data.users });
+			} else {
+				set({ userProfiles: [] });
+				toast.error("Failed to load user profiles");
+			}
 		} catch (error) {
+			console.error("Error fetching user profiles:", error);
 			set({ userProfiles: [] });
-			toast.error(error.response.data.message || "Something went wrong");
+			toast.error(error?.response?.data?.message || "Failed to load user profiles");
 		} finally {
 			set({ isLoadingUserProfiles: false });
 		}
@@ -38,22 +50,31 @@ export const useMatchStore = create((set) => ({
 
 	swipeLeft: async (user) => {
 		try {
+			if (!user?.id) {
+				toast.error("Invalid user");
+				return;
+			}
 			set({ swipeFeedback: "passed" });
-			await axiosInstance.post("/matches/swipe-left/" + user._id);
+			await axiosInstance.post("/matches/swipe-left/" + user.id);
 		} catch (error) {
-			console.log(error);
-			toast.error("Failed to swipe left");
+			console.error("Error swiping left:", error);
+			toast.error(error?.response?.data?.message || "Failed to swipe left");
 		} finally {
 			setTimeout(() => set({ swipeFeedback: null }), 1500);
 		}
 	},
+
 	swipeRight: async (user) => {
 		try {
+			if (!user?.id) {
+				toast.error("Invalid user");
+				return;
+			}
 			set({ swipeFeedback: "liked" });
-			await axiosInstance.post("/matches/swipe-right/" + user._id);
+			await axiosInstance.post("/matches/swipe-right/" + user.id);
 		} catch (error) {
-			console.log(error);
-			toast.error("Failed to swipe right");
+			console.error("Error swiping right:", error);
+			toast.error(error?.response?.data?.message || "Failed to swipe right");
 		} finally {
 			setTimeout(() => set({ swipeFeedback: null }), 1500);
 		}
@@ -62,24 +83,32 @@ export const useMatchStore = create((set) => ({
 	subscribeToNewMatches: () => {
 		try {
 			const socket = getSocket();
+			if (!socket) {
+				console.error("Socket not initialized");
+				return;
+			}
 
 			socket.on("newMatch", (newMatch) => {
-				set((state) => ({
-					matches: [...state.matches, newMatch],
-				}));
-				toast.success("You got a new match!");
+				if (newMatch) {
+					set((state) => ({
+						matches: [...state.matches, newMatch],
+					}));
+					toast.success("You got a new match!");
+				}
 			});
 		} catch (error) {
-			console.log(error);
+			console.error("Error subscribing to new matches:", error);
 		}
 	},
 
 	unsubscribeFromNewMatches: () => {
 		try {
 			const socket = getSocket();
-			socket.off("newMatch");
+			if (socket) {
+				socket.off("newMatch");
+			}
 		} catch (error) {
-			console.error(error);
+			console.error("Error unsubscribing from new matches:", error);
 		}
 	},
 }));

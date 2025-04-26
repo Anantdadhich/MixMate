@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import { getConnectedUsers, getIO } from "../socket/socket.server.js";
 import axios from "axios";
+import prisma from "../config/db.js";
 
 export const swipeRight = async (req, res) => {
 	try {
@@ -15,35 +16,57 @@ export const swipeRight = async (req, res) => {
 			});
 		}
 
-		if (!currentUser.likes.includes(likedUserId)) {
-			currentUser.likes.push(likedUserId);
-			await currentUser.save();
+		// Check if already liked
+		const existingLike = await prisma.userLike.findFirst({
+			where: {
+				userId: currentUser.id,
+				likedUserId: likedUserId
+			}
+		});
 
-			// if the other user already liked us, it's a match, so let's update both users
-			if (likedUser.likes.includes(currentUser.id)) {
-				currentUser.matches.push(likedUserId);
-				likedUser.matches.push(currentUser.id);
+		if (!existingLike) {
+			// Create the like
+			await prisma.userLike.create({
+				data: {
+					userId: currentUser.id,
+					likedUserId: likedUserId
+				}
+			});
 
-				await Promise.all([await currentUser.save(), await likedUser.save()]);
+			// Check if it's a match
+			const existingMatch = await prisma.userLike.findFirst({
+				where: {
+					userId: likedUserId,
+					likedUserId: currentUser.id
+				}
+			});
+
+			if (existingMatch) {
+				// Create match for both users
+				await prisma.userMatch.createMany({
+					data: [
+						{ userId: currentUser.id, matchedUserId: likedUserId },
+						{ userId: likedUserId, matchedUserId: currentUser.id }
+					]
+				});
 
 				// send notification in real-time with socket.io
 				const connectedUsers = getConnectedUsers();
 				const io = getIO();
 
 				const likedUserSocketId = connectedUsers.get(likedUserId);
-
 				if (likedUserSocketId) {
 					io.to(likedUserSocketId).emit("newMatch", {
-						_id: currentUser._id,
+						id: currentUser.id,
 						name: currentUser.name,
 						image: currentUser.image,
 					});
 				}
 
-				const currentSocketId = connectedUsers.get(currentUser._id.toString());
+				const currentSocketId = connectedUsers.get(currentUser.id);
 				if (currentSocketId) {
 					io.to(currentSocketId).emit("newMatch", {
-						_id: likedUser._id,
+						id: likedUser.id,
 						name: likedUser.name,
 						image: likedUser.image,
 					});
@@ -56,11 +79,11 @@ export const swipeRight = async (req, res) => {
 			user: currentUser,
 		});
 	} catch (error) {
-		console.log("Error in swipeRight: ", error);
-
+		console.error("Error in swipeRight: ", error);
 		res.status(500).json({
 			success: false,
 			message: "Internal server error",
+			error: process.env.NODE_ENV === 'development' ? error.message : undefined
 		});
 	}
 };
@@ -70,9 +93,21 @@ export const swipeLeft = async (req, res) => {
 		const { dislikedUserId } = req.params;
 		const currentUser = await User.findById(req.user.id);
 
-		if (!currentUser.dislikes.includes(dislikedUserId)) {
-			currentUser.dislikes.push(dislikedUserId);
-			await currentUser.save();
+		// Check if already disliked
+		const existingDislike = await prisma.userDislike.findFirst({
+			where: {
+				userId: currentUser.id,
+				dislikedUserId: dislikedUserId
+			}
+		});
+
+		if (!existingDislike) {
+			await prisma.userDislike.create({
+				data: {
+					userId: currentUser.id,
+					dislikedUserId: dislikedUserId
+				}
+			});
 		}
 
 		res.status(200).json({
@@ -80,29 +115,44 @@ export const swipeLeft = async (req, res) => {
 			user: currentUser,
 		});
 	} catch (error) {
-		console.log("Error in swipeLeft: ", error);
-
+		console.error("Error in swipeLeft: ", error);
 		res.status(500).json({
 			success: false,
 			message: "Internal server error",
+			error: process.env.NODE_ENV === 'development' ? error.message : undefined
 		});
 	}
 };
 
 export const getMatches = async (req, res) => {
 	try {
-		const user = await User.findById(req.user.id).populate("matches", "name image");
+		const user = await User.findById(req.user.id);
+		
+		const matches = await prisma.userMatch.findMany({
+			where: {
+				userId: user.id
+			},
+			include: {
+				matchedUser: {
+					select: {
+						id: true,
+						name: true,
+						image: true
+					}
+				}
+			}
+		});
 
 		res.status(200).json({
 			success: true,
-			matches: user.matches,
+			matches: matches.map(match => match.matchedUser),
 		});
 	} catch (error) {
-		console.log("Error in getMatches: ", error);
-
+		console.error("Error in getMatches: ", error);
 		res.status(500).json({
 			success: false,
 			message: "Internal server error",
+			error: process.env.NODE_ENV === 'development' ? error.message : undefined
 		});
 	}
 };
@@ -112,44 +162,54 @@ export const getUserProfiles = async (req, res) => {
 		const currentUser = await User.findById(req.user.id);
 
 		// Get all users in the same location, excluding current user, likes, dislikes, and matches
-		const users = await User.find({
-			$and: [
-				{ _id: { $ne: currentUser.id } },
-				{ _id: { $nin: currentUser.likes } },
-				{ _id: { $nin: currentUser.dislikes } },
-				{ _id: { $nin: currentUser.matches } },
-				{ location: currentUser.location } // Add location filter
-			],
+		const users = await prisma.user.findMany({
+			where: {
+				AND: [
+					{ id: { not: currentUser.id } },
+					{ NOT: {
+						likes: { some: { userId: currentUser.id } }
+					}},
+					{ NOT: {
+						dislikes: { some: { userId: currentUser.id } }
+					}},
+					{ NOT: {
+						matches: { some: { userId: currentUser.id } }
+					}}
+				]
+			},
+			include: {
+				preferences: true,
+				dietaryRestrictions: true,
+				availableAppliances: true,
+				dietaryGoals: true,
+				ingredientsList: true
+			}
 		});
 
-		if (!users.length) {
-			return res.status(200).json({
-				success: true,
-				users: [], // Return empty array if no users found
-			});
-		}
-
-		// Calculate compatibility scores for all users
+		// Calculate compatibility scores
 		const usersWithScores = await Promise.all(
 			users.map(async (user) => {
-				const compatibility = await calculateCompatibilityScore(currentUser, user);
+				const score = await calculateCompatibilityScore(currentUser, user);
 				return {
-					...user.toObject(),
-					compatibilityScore: compatibility.score,
-					goalCompletion: compatibility.goalCompletion
+					...user,
+					compatibilityScore: score,
 				};
 			})
 		);
-		usersWithScores.sort((a, b) => a.compatibilityScore - b.compatibilityScore);
+
+		// Sort by compatibility score
+		usersWithScores.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
+
 		res.status(200).json({
 			success: true,
 			users: usersWithScores,
 		});
 	} catch (error) {
-		console.log("Error in getUserProfiles: ", error);
+		console.error("Error in getUserProfiles: ", error);
 		res.status(500).json({
 			success: false,
 			message: "Internal server error",
+			error: process.env.NODE_ENV === 'development' ? error.message : undefined
 		});
 	}
 };

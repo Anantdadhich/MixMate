@@ -40,8 +40,10 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
 app.use(
 	cors({
-		origin: process.env.CLIENT_URL,
+		origin: [process.env.CLIENT_URL, 'http://localhost:5173', 'http://localhost:3000'],
 		credentials: true,
+		methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+		allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 	})
 );
 
@@ -209,7 +211,7 @@ Format each recipe exactly like this:
 
 		const completion = await groq.chat.completions.create({
 			messages: [{ role: 'user', content: recipePrompt }],
-			model: 'llama-3.1-70b-versatile',
+			model: 'llama-3.3-70b-versatile',
 			temperature: 0.7,
 			max_tokens: 1000,
 		});
@@ -229,7 +231,7 @@ Return ONLY a raw JSON array with no markdown formatting, no backticks, and no '
 
 		const completion2 = await groq.chat.completions.create({
 			messages: [{ role: 'user', content: structuringPrompt }],
-			model: 'llama-3.1-70b-versatile',
+			model: 'llama-3.3-70b-versatile',
 			temperature: 0.1,
 			max_tokens: 1000,
 		});
