@@ -22,7 +22,7 @@ const LandingPage = () => {
         >
           <div className="md:w-1/2">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 mb-6">
-              <span className="text-emerald-600">MixMatch:</span> Reduce Food Waste, Create Connections
+              <span className="text-emerald-600">MixMate:</span> Reduce Food Waste, Create Connections
             </h1>
             <p className="text-lg text-gray-600 mb-8">
               In a world where one-third of food goes unsold or uneaten, MixMatch empowers health-conscious individuals

@@ -255,42 +255,7 @@ Return ONLY a raw JSON array with no markdown formatting, no backticks, and no '
 		res.status(500).json({ error: 'Error generating recipes' });
 	}
 });
-app.post('/api/process-image', async (req, res) => {
-	try {
-	  const { imageData } = req.body;
-	  
-	  const response = await groq.chat.completions.create({
-		model: "meta-llama/llama-4-scout-17b-16e-instruct", 
-		messages: [
-		  {
-			role: "user",
-			content: [
-			  {
-				type: "text",
-				text: `Identify only the food ingredients clearly visible in the image...`
-			  },
-			  {
-				type: "image_url",
-				image_url: {
-				  url: imageData
-				}
-			  }
-			]
-		  }
-		],
-		temperature: 0.0,
-		response_format: { type: "json_object" }
-	  });
-	  
-	  res.json(response.choices[0].message);
-	} catch (error) {
-	  console.error('Image processing error:', error);
-	  res.status(500).json({ 
-		error: 'Failed to process image',
-		details: error.message 
-	  });
-	}
-  });
+
 
 
 

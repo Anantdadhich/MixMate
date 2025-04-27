@@ -1,8 +1,8 @@
-# MixMatch
+# MixMate
 
 **Reduce Food Waste, Create Connections**
 
-MixMatch is a social cooking platform designed to tackle food waste and isolation in the kitchen. By matching users with similar ingredients and dietary goals, then generating AI-powered recipes for them to cook together, MixMatch turns leftover ingredients into shared, healthy meals—and new friendships.
+MixMate is a social cooking platform designed to tackle food waste and isolation in the kitchen. By matching users with similar ingredients and dietary goals, then generating AI-powered recipes for them to cook together, MixMatch turns leftover ingredients into shared, healthy meals—and new friendships.
 
 ---
 
@@ -12,7 +12,7 @@ Every year, nearly 40% of fruits and vegetables in India goes to waste . At the 
 
 ## Solution Overview
 
-MixMatch solves these problems by:
+MixMate solves these problems by:
 
 1. **Social Matching**: Letting users create profiles with dietary goals, allergies, kitchen tools, and current ingredients.  
 2. **Swipe-Based Discovery**: Enabling users to swipe right/left on potential cooking partners based on pantry overlap and diet compatibility.  
