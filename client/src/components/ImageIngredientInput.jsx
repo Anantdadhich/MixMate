@@ -105,40 +105,12 @@ const ImageIngredientInput = () => {
   const processImage = async (imageData) => {
     setIsProcessing(true);
     try {
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const response = await fetch('/api/process-image', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: "llama-3.2-11b-vision-preview",
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: `Identify only the food ingredients clearly visible in the image. Provide the ingredient name and, if possible, a best-guess quantity. Use appropriate units if needed (e.g., "500g," "250ml") or a simple count if applicable (e.g., "1 apple"). Do not guess or add items not clearly visible. If no ingredients are identifiable, respond with "VOID." If a quantity cannot be estimated, set "quantity" as "unknown." Respond only with the JSON structure below, and do not include any additional text or explanations:
-
-                        {
-                        "ingredientsList": [
-                            { "ingredient": "item name", "quantity": "estimated amount" }
-                        ]
-                        }`
-                },
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: imageData
-                  }
-                }
-              ]
-            }
-          ],
-          temperature: 0.0,
-          response_format: { type: "json_object" }
-        })
+        body: JSON.stringify({ imageData })
       });
 
       if (!response.ok) {

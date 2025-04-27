@@ -40,7 +40,12 @@ export const useMatchStore = create((set) => ({
 			if (res?.data?.users) {
 				const formattedUsers = res.data.users.map(user => ({
 					...user,
-					id: user.id || user._id
+					id: user.id || user._id,
+					goalCompletion: {
+						protein: Number(user.goalCompletion?.protein || 0),
+						carbs: Number(user.goalCompletion?.carbs || 0),
+						fats: Number(user.goalCompletion?.fats || 0)
+					}
 				}));
 				set({ userProfiles: formattedUsers });
 			} else {

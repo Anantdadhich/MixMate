@@ -255,47 +255,45 @@ Return ONLY a raw JSON array with no markdown formatting, no backticks, and no '
 		res.status(500).json({ error: 'Error generating recipes' });
 	}
 });
+app.post('/api/process-image', async (req, res) => {
+	try {
+	  const { imageData } = req.body;
+	  
+	  const response = await groq.chat.completions.create({
+		model: "meta-llama/llama-4-scout-17b-16e-instruct", 
+		messages: [
+		  {
+			role: "user",
+			content: [
+			  {
+				type: "text",
+				text: `Identify only the food ingredients clearly visible in the image...`
+			  },
+			  {
+				type: "image_url",
+				image_url: {
+				  url: imageData
+				}
+			  }
+			]
+		  }
+		],
+		temperature: 0.0,
+		response_format: { type: "json_object" }
+	  });
+	  
+	  res.json(response.choices[0].message);
+	} catch (error) {
+	  console.error('Image processing error:', error);
+	  res.status(500).json({ 
+		error: 'Failed to process image',
+		details: error.message 
+	  });
+	}
+  });
 
-// app.post('/api/generate-image', async (req, res) => {
-// 	try {
-// 		const { recipe, width = 512, height = 384 } = req.body;
-		
-// 		if (!recipe || !recipe.title || !recipe.cuisine || !recipe.description) {
-// 			return res.status(400).json({
-// 				error: 'Invalid recipe data',
-// 				details: 'Recipe must include title, cuisine, and description'
-// 			});
-// 		}
 
-// 		const toolhouse = new Toolhouse({
-// 			apiKey: process.env.TOOLHOUSE_API_KEY
-// 		});
 
-// 		const prompt = `Generate an appetizing, professional food photography style image of ${recipe.title}, 
-//                    a ${recipe.cuisine} dish. The image should be well-lit, with beautiful plating and styling.
-//                    Description: ${recipe.description}`;
-
-// 		const response = await toolhouse.generateImage({
-// 			prompt,
-// 			width: Math.min(Math.max(width, 64), 2048),
-// 			height: Math.min(Math.max(height, 64), 2048)
-// 		});
-
-// 		res.json({ 
-// 			imageUrl: response.url,
-// 			prompt,
-// 			settings: { width, height }
-// 		});
-// 	} catch (error) {
-// 		console.error('Error generating image:', error);
-// 		res.status(500).json({ 
-// 			error: 'Failed to generate image',
-// 			details: error.message 
-// 		});
-// 	}
-// });
-
-// Global error handler
 app.use((err, req, res, next) => {
 	console.error(err.stack);
 	res.status(500).json({
@@ -319,3 +317,5 @@ connectDB().then(() => {
 		console.log(`Server running on port ${PORT}`);
 	});
 });
+
+// Add this to your server.js

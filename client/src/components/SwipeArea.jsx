@@ -56,24 +56,29 @@ const SwipeArea = () => {
 		swipeStartTime.current = Date.now();
 	};
 
+	// Helper to filter dietary restrictions
+	const getFilteredDietaryRestrictions = (restrictions) =>
+		Object.entries(restrictions || {})
+			.filter(([key, value]) => value && !['allergies', 'id', 'userId', '_id'].includes(key));
+
 	const DietaryGoalBar = ({ value, icon, label }) => {
-		// Function to determine color based on percentage
-		const getColor = (percentage) => {
-			if (percentage < 33) return 'bg-red-400';
-			if (percentage < 66) return 'bg-yellow-400';
+		// Ensure value is a number and within 0-100
+		const percentage = Math.max(0, Math.min(100, Number(value) || 0));
+		const getColor = (p) => {
+			if (p < 33) return 'bg-red-400';
+			if (p < 66) return 'bg-yellow-400';
 			return 'bg-green-500';
 		};
-
 		return (
 			<div className="flex items-center w-full mb-2">
 				<span className="mr-2">{icon}</span>
 				<div className="w-full bg-gray-200 rounded-full h-2.5">
 					<div 
-						className={`h-2.5 rounded-full ${getColor(value)}`}
-						style={{ width: `${value}%` }}
+						className={`h-2.5 rounded-full ${getColor(percentage)}`}
+						style={{ width: `${percentage}%` }}
 					></div>
 				</div>
-				<span className="ml-2 text-sm">{value}%</span>
+				<span className="ml-2 text-sm">{percentage}%</span>
 			</div>
 		);
 	};
@@ -100,8 +105,7 @@ const SwipeArea = () => {
 			return () => clearInterval(intervalId);
 		}, []);
 
-		const dietaryRestrictions = Object.entries(user.dietaryRestrictions || {})
-			.filter(([key, value]) => value && key !== 'allergies');
+		const dietaryRestrictions = getFilteredDietaryRestrictions(user.dietaryRestrictions);
 
 		const appliances = [
 			'air Fryer', 'microwave', 'oven', 'stove Top', 
@@ -164,9 +168,15 @@ const SwipeArea = () => {
 						{/* Combined Macros */}
 						<motion.div variants={itemVariants}>
 							<h3 className="text-2xl font-medium mb-4">Combined Macros</h3>
-							<DietaryGoalBar value={user.goalCompletion?.protein || 0} icon="🥩" label="Protein" />
-							<DietaryGoalBar value={user.goalCompletion?.carbs || 0} icon="🍞" label="Carbs" />
-							<DietaryGoalBar value={user.goalCompletion?.fats || 0} icon="🥑" label="Fats" />
+							{(user.goalCompletion && (user.goalCompletion.protein || user.goalCompletion.carbs || user.goalCompletion.fats)) ? (
+								<>
+									<DietaryGoalBar value={user.goalCompletion?.protein} icon="🥩" label="Protein" />
+									<DietaryGoalBar value={user.goalCompletion?.carbs} icon="🍞" label="Carbs" />
+									<DietaryGoalBar value={user.goalCompletion?.fats} icon="🥑" label="Fats" />
+								</>
+							) : (
+								<div className="text-gray-500">No macro data available</div>
+							)}
 						</motion.div>
 
 						{/* Cuisine Preferences */}
@@ -384,9 +394,21 @@ const SwipeArea = () => {
 
 								<div className="mb-4">
 									<h3 className="text-lg font-medium mb-2">Combined Macros</h3>
-									<DietaryGoalBar value={user.goalCompletion?.protein || 0} icon="🥩" label="Protein" />
-									<DietaryGoalBar value={user.goalCompletion?.carbs || 0} icon="🍞" label="Carbs" />
-									<DietaryGoalBar value={user.goalCompletion?.fats || 0} icon="🥑" label="Fats" />
+									<DietaryGoalBar 
+										value={user.goalCompletion?.protein || 0} 
+										icon="🥩" 
+										label="Protein" 
+									/>
+									<DietaryGoalBar 
+										value={user.goalCompletion?.carbs || 0} 
+										icon="🍞" 
+										label="Carbs" 
+									/>
+									<DietaryGoalBar 
+										value={user.goalCompletion?.fats || 0} 
+										icon="🥑" 
+										label="Fats" 
+									/>
 								</div>
 
 								<div className="mb-4">
