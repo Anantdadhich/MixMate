@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import User from "../models/User.js";
+import prisma from "../config/db.js";
 
 export const protectRoute = async (req, res, next) => {
 	try {
@@ -21,10 +21,18 @@ export const protectRoute = async (req, res, next) => {
 			});
 		}
 
-		const currentUser = await User.findById(decoded.id);
+		const currentUser = await prisma.user.findUnique({
+			where: { id: decoded.id }
+		});
+
+		if (!currentUser) {
+			return res.status(401).json({
+				success: false,
+				message: "Not authorized - User not found",
+			});
+		}
 
 		req.user = currentUser;
-
 		next();
 	} catch (error) {
 		console.log("Error in auth middleware: ", error);

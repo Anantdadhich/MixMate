@@ -43,7 +43,7 @@ const SwipeArea = () => {
 					}),
 				});
 				const data = await response.json();
-				setRecipes(data.recipes); // Store the structured array instead of markdown
+				setRecipes(data.recipes);
 			} catch (error) {
 				console.error('Error fetching recipes:', error);
 			} finally {
@@ -224,7 +224,7 @@ const SwipeArea = () => {
 								{recipes?.map((recipe, index) => {
 									// Check if recipe is already in favorites
 									const isInFavorites = authUser?.favorites?.some(
-										fav => fav.title === recipe.title && fav.description === recipe.description
+										fav => fav.recipeId === recipe.id || (fav.title === recipe.title && fav.cuisine === recipe.cuisine)
 									);
 
 									return (
@@ -240,16 +240,35 @@ const SwipeArea = () => {
 															toast.info('Recipe is already in favorites!');
 															return;
 														}
-														const currentFavorites = authUser?.favorites || [];
-														const newFavorite = {
-															id: `${Date.now()}-${index}`,
-															title: recipe.title,
-															cuisine: recipe.cuisine,
-															description: recipe.description,
-														};
-														const updatedFavorites = [...currentFavorites, newFavorite];
-														await updateProfile({ favorites: updatedFavorites });
-														toast.success('Recipe added to favorites!');
+														try {
+															const response = await fetch('http://localhost:4999/api/users/favorites', {
+																method: 'POST',
+																headers: { 'Content-Type': 'application/json' },
+																credentials: 'include',
+																body: JSON.stringify({
+																	id: recipe.id,
+																	title: recipe.title,
+																	cuisine: recipe.cuisine,
+																	description: recipe.description
+																})
+															});
+															if (response.ok) {
+																toast.success('Recipe added to favorites!');
+																// Update local state
+																const updatedFavorites = [...(authUser?.favorites || []), {
+																	recipeId: recipe.id,
+																	title: recipe.title,
+																	cuisine: recipe.cuisine,
+																	description: recipe.description
+																}];
+																await updateProfile({ favorites: updatedFavorites });
+															} else {
+																toast.error('Failed to add recipe to favorites');
+															}
+														} catch (error) {
+															console.error('Error adding favorite:', error);
+															toast.error('Failed to add recipe to favorites');
+														}
 													}}
 													className="p-2 hover:bg-red-50 rounded-lg transition-colors"
 												>

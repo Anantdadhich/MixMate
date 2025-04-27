@@ -15,7 +15,11 @@ export const useMatchStore = create((set) => ({
 			set({ isLoadingMyMatches: true });
 			const res = await axiosInstance.get("/matches");
 			if (res?.data?.matches) {
-				set({ matches: res.data.matches });
+				const formattedMatches = res.data.matches.map(match => ({
+					...match,
+					id: match.id || match._id
+				}));
+				set({ matches: formattedMatches });
 			} else {
 				set({ matches: [] });
 				toast.error("Failed to load matches");
@@ -34,7 +38,11 @@ export const useMatchStore = create((set) => ({
 			set({ isLoadingUserProfiles: true });
 			const res = await axiosInstance.get("/matches/user-profiles");
 			if (res?.data?.users) {
-				set({ userProfiles: res.data.users });
+				const formattedUsers = res.data.users.map(user => ({
+					...user,
+					id: user.id || user._id
+				}));
+				set({ userProfiles: formattedUsers });
 			} else {
 				set({ userProfiles: [] });
 				toast.error("Failed to load user profiles");
